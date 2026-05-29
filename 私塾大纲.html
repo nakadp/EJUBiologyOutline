@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级生物私塾大纲</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --primary-glow: rgba(56, 189, 248, 0.5);
+            --secondary-glow: rgba(167, 139, 250, 0.5);
+            --accent-green: #34d399;
+            --accent-blue: #38bdf8;
+            --accent-purple: #c084fc;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Resizer variables */
+            --left-ratio: 50%;
+            --left-ratio-num: 50;
+            --scale-factor: calc(var(--left-ratio-num) / 50);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(167, 139, 250, 0.08), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        /* Ambient animated blobs */
+        .ambient-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(56, 189, 248, 0.15);
+            top: -100px;
+            left: -100px;
+        }
+
+        .blob-2 {
+            width: 500px;
+            height: 500px;
+            background: rgba(167, 139, 250, 0.15);
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        header {
+            text-align: left;
+            padding: 4rem 2rem 3rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #38bdf8, #c084fc, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            animation: fade-in-up 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        header p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            font-weight: 300;
+            max-width: 800px;
+            animation: fade-in-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        /* Container Layout */
+        .page-container {
+            position: relative;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 0 6rem;
+        }
+
+        /* The draggable boundary */
+        .resizer {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: var(--left-ratio);
+            width: 16px;
+            transform: translateX(-50%);
+            cursor: col-resize;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .resizer::after {
+            content: '';
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: background 0.2s, width 0.2s, box-shadow 0.2s;
+        }
+
+        .resizer:hover::after, .resizer.dragging::after {
+            background: var(--accent-blue);
+            width: 4px;
+            box-shadow: 0 0 15px var(--accent-blue);
+        }
+
+        /* Row Layout */
+        .lesson-row {
+            display: flex;
+            width: 100%;
+            margin-bottom: 3rem;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .lesson-row.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .lesson-text-col {
+            width: var(--left-ratio);
+            padding-left: 1rem;
+            padding-right: 3rem; /* Space near the resizer */
+            position: relative;
+        }
+
+        .lesson-image-col {
+            width: calc(100% - var(--left-ratio));
+            padding-left: 3rem; /* Space near the resizer */
+            padding-right: 2rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        /* Image Display */
+        .lesson-image-col img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .lesson-image-col img:hover {
+            transform: scale(1.02);
+        }
+
+        .empty-image-placeholder {
+            width: 100%;
+            padding: 3rem;
+            border: 2px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: calc(1.1rem * var(--scale-factor));
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Timeline Graphics */
+        .timeline-line {
+            position: absolute;
+            left: 2.75rem;
+            top: 2rem;
+            bottom: -3rem;
+            width: 2px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.1));
+            z-index: 0;
+        }
+
+        .lesson-row:last-child .timeline-line {
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 2.75rem;
+            top: 2.5rem;
+            width: calc(14px * var(--scale-factor));
+            height: calc(14px * var(--scale-factor));
+            border-radius: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-blue);
+            box-shadow: 0 0 15px var(--accent-blue);
+            border: 2px solid var(--bg-color);
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .lesson-row:nth-child(3n+2) .timeline-dot {
+            background: var(--accent-purple);
+            box-shadow: 0 0 15px var(--accent-purple);
+        }
+
+        .lesson-row:nth-child(3n+3) .timeline-dot {
+            background: var(--accent-green);
+            box-shadow: 0 0 15px var(--accent-green);
+        }
+
+        /* Glassmorphism Content */
+        .timeline-content {
+            margin-left: 5rem; /* Space from dot */
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: calc(2.5rem * var(--scale-factor));
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .lesson-row:hover .timeline-content {
+            transform: translateX(8px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .lesson-row:hover .timeline-content::before {
+            opacity: 1;
+        }
+
+        /* Typography Scaling via var(--scale-factor) */
+        .lesson-number {
+            display: inline-block;
+            font-size: calc(0.85rem * var(--scale-factor));
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-blue);
+            padding: calc(0.4rem * var(--scale-factor)) calc(1rem * var(--scale-factor));
+            border-radius: 30px;
+            margin-bottom: calc(1.2rem * var(--scale-factor));
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .lesson-row:nth-child(3n+2) .lesson-number {
+            background: rgba(192, 132, 252, 0.1);
+            color: var(--accent-purple);
+            border-color: rgba(192, 132, 252, 0.2);
+        }
+
+        .lesson-row:nth-child(3n+3) .lesson-number {
+            background: rgba(52, 211, 153, 0.1);
+            color: var(--accent-green);
+            border-color: rgba(52, 211, 153, 0.2);
+        }
+
+        .lesson-title {
+            font-size: calc(1.75rem * var(--scale-factor));
+            font-weight: 700;
+            margin-bottom: calc(0.75rem * var(--scale-factor));
+            color: #fff;
+            letter-spacing: -0.01em;
+            line-height: 1.3;
+        }
+
+        .lesson-core {
+            font-size: calc(1.1rem * var(--scale-factor));
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: calc(1.5rem * var(--scale-factor));
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        /* Detailed points */
+        .details-wrapper {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: calc(1.5rem * var(--scale-factor));
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            margin-top: calc(1.5rem * var(--scale-factor));
+        }
+
+        .details-list {
+            list-style: none;
+        }
+
+        .details-list li {
+            position: relative;
+            font-size: calc(0.95rem * var(--scale-factor));
+            color: #cbd5e1;
+            margin-bottom: calc(0.8rem * var(--scale-factor));
+            line-height: 1.6;
+            padding-left: calc(1.5rem * var(--scale-factor));
+        }
+
+        .details-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .details-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: calc(0.6rem * var(--scale-factor));
+            width: calc(6px * var(--scale-factor));
+            height: calc(6px * var(--scale-factor));
+            background: var(--accent-blue);
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .lesson-row:nth-child(3n+2) .details-list li::before { background: var(--accent-purple); }
+        .lesson-row:nth-child(3n+3) .details-list li::before { background: var(--accent-green); }
+
+        @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Touch devices or small screens fallback */
+        @media (max-width: 768px) {
+            .resizer { display: none; }
+            :root { --left-ratio: 100% !important; --left-ratio-num: 50 !important; }
+            .lesson-row { flex-direction: column; }
+            .lesson-text-col { padding-right: 1rem; margin-bottom: 2rem; }
+            .lesson-image-col { width: 100%; padding-left: 1rem; }
+            .timeline-content { margin-left: 3rem; padding: 1.5rem; }
+            .timeline-line { left: 1.5rem; }
+            .timeline-dot { left: 1.5rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <header>
+        <h1>EJU生物私塾大纲</h1>
+        <p>生物系统化学习体系，融合基础与进阶知识，构建完整的生物学思维。</p>
+    </header>
+
+    <main class="page-container" id="page-container">
+        <!-- Interactive draggable border -->
+        <div class="resizer" id="resizer"></div>
+
+        <div id="timeline-container">
+            <!-- JS will populate items here -->
+        </div>
+    </main>
+
+    <script>
+        const lessonsData = [
+            {
+                lesson: 1,
+                title: "生物基础",
+                core: "原核与真核、显微镜、生体物质、酵素、酵素实验",
+                mapImage: "1.png",
+                details: [
+                    "細胞の発見と細胞説",
+                    "細胞の多様性と共通性",
+                    "細胞の活動を支える代謝",
+                    "代謝を支える酵素",
+                    "酵素の種類とそのはたらく場所",
+                    "タンパク質の構造とはたらき",
+                    "代謝と酵素",
+                    "ATPとそのはたらき"
+                ]
+            },
+            {
+                lesson: 2,
+                title: "细胞结构",
+                core: "细胞膜、细胞壁、细胞小器官、细胞骨骼、物质输送、原形质分离",
+                mapImage: "2.png",
+                details: [
+                    "細胞の構造",
+                    "細胞小器官のはたらきと細胞の運動",
+                    "細胞膜のつくりと性質",
+                    "細胞膜のはたらき",
+                    "細胞膜とタンパク質"
+                ]
+            },
+            {
+                lesson: 3,
+                title: "细胞结构进阶",
+                core: "细胞接着、动物组织、植物组织 ＋ 复习演习",
+                mapImage: "3.png",
+                details: [
+                    "細胞の分化",
+                    "単細胞生物と細胞群体",
+                    "多細胞生物",
+                    "動物の組織と器官",
+                    "植物の組織と器官"
+                ]
+            },
+            {
+                lesson: 4,
+                title: "代谢（一）",
+                core: "代谢总论、呼吸、发酵、呼吸商",
+                mapImage: "4.png",
+                details: [
+                    "外呼吸と内呼吸",
+                    "呼吸（好気呼吸）のしくみ",
+                    "グルコース以外による呼吸と呼吸商",
+                    "嫌気呼吸とそのしくみ"
+                ]
+            },
+            {
+                lesson: 5,
+                title: "代谢（二）",
+                core: "光合成、化学合成、光合成曲线",
+                mapImage: "5.png",
+                details: [
+                    "葉緑体中の色素と光合成",
+                    "光合成のしくみ",
+                    "光合成産物のゆくえ",
+                    "細菌の炭酸同化"
+                ]
+            },
+            {
+                lesson: 6,
+                title: "代谢 / 分子遗传",
+                core: "窒素固定、窒素同化 + 复制、转写、翻译",
+                mapImage: "6.png",
+                details: [
+                    "植物の窒素同化",
+                    "空中窒素の固定",
+                    "遺伝子の本体 DNA",
+                    "DNAの構造と複製",
+                    "形質発現"
+                ]
+            },
+            {
+                lesson: 7,
+                title: "分子遗传",
+                core: "基因突变、操纵子、分子遗传学研究史",
+                mapImage: "7.png",
+                details: [
+                    "DNAと突然変異",
+                    "細胞分化と遺伝子",
+                    "遺伝情報の発現と分化",
+                    "遺伝子の調節",
+                    "DNA による形質支配",
+                    "DNA の構造",
+                    "バイオテクノロジーとDNAの増幅",
+                    "遺伝子操作",
+                    "細胞の操作"
+                ]
+            },
+            {
+                lesson: 8,
+                title: "生殖",
+                core: "体细胞分裂、减数分裂、无性与有性生殖、精卵形成、受精",
+                mapImage: "8.png",
+                details: [
+                    "体細胞分裂とその過程",
+                    "染色体",
+                    "生殖の種類",
+                    "無性生殖と有性生殖の比較",
+                    "減数分裂とその過程",
+                    "減数分裂と染色体",
+                    "動物の生殖細胞の形成",
+                    "受精"
+                ]
+            },
+            {
+                lesson: 9,
+                title: "生殖 / 发生",
+                core: "被子植物的重复受精 + 卵割、海胆与青蛙的发生",
+                mapImage: "9.png",
+                details: [
+                    "種子植物の生殖細胞の形成",
+                    "種子植物の受精",
+                    "動物の発生の過程と胚葉の形成",
+                    "器官形成"
+                ]
+            },
+            {
+                lesson: 10,
+                title: "发生进阶",
+                core: "发生学研究史、果蝇的形态形成、花的ABC模型",
+                mapImage: "10.png",
+                details: [
+                    "モザイク卵と調節卵",
+                    "胚の予定運命",
+                    "分化の誘導",
+                    "再生"
+                ]
+            },
+            {
+                lesson: 11,
+                title: "遗传（一）",
+                core: "独立、连锁、染色体地图",
+                mapImage: "11.png",
+                details: [
+                    "遺伝とメンデルの実験",
+                    "メンデルの遺伝の法則",
+                    "検定交雑",
+                    "連鎖と組換え",
+                    "組換え値と染色体地図"
+                ]
+            },
+            {
+                lesson: 12,
+                title: "遗传（二）",
+                core: "9331的扩展、不完全优性、复对立、性的决定、伴性遗传",
+                mapImage: "12.png",
+                details: [
+                    "一遺伝子雑種の遺伝子間相互作用",
+                    "二遺伝子雑種の遺伝子間相互作用と母性遺伝",
+                    "性染色体と性決定",
+                    "伴性遺伝"
+                ]
+            },
+            {
+                lesson: 13,
+                title: "动物生理（一）",
+                core: "体液、循环系",
+                mapImage: "13.png",
+                details: [
+                    "内部環境と恒常性の維持",
+                    "内部環境をつくる体液",
+                    "循環系とそのつくり"
+                ]
+            },
+            {
+                lesson: 14,
+                title: "动物生理（二）",
+                core: "免疫、神经细胞的膜电位",
+                mapImage: "14.png",
+                details: [
+                    "生体防御",
+                    "生体防御とタンパク質",
+                    "神経細胞（ニューロン）",
+                    "興奮の伝わり方"
+                ]
+            },
+            {
+                lesson: 15,
+                title: "动物生理（三）",
+                core: "神经系",
+                mapImage: "15.png",
+                details: [
+                    "神経系の発達",
+                    "中枢神経系とそのはたらき",
+                    "末梢神経系とそのはたらき",
+                    "反射"
+                ]
+            },
+            {
+                lesson: 16,
+                title: "动物生理（四）",
+                core: "排出系、内分泌系",
+                mapImage: "16.png",
+                details: [
+                    "体液の浸透圧の調節",
+                    "老廃物の排出",
+                    "肝臓のつくりとはたらき",
+                    "ホルモンと内分泌系",
+                    "間脳の視床下部と脳下垂体",
+                    "ホルモンの相互作用",
+                    "自律神経系",
+                    "自律神経系とホルモンの協調"
+                ]
+            },
+            {
+                lesson: 17,
+                title: "动物生理（五）",
+                core: "受容器、效果器",
+                mapImage: "17.png",
+                details: [
+                    "刺激の受容と反応",
+                    "いろいろな受容器",
+                    "筋と筋収縮の起こり方",
+                    "筋収縮とタンパク質",
+                    "その他の効果器（作動体）",
+                    "うまれつき備わっている行動",
+                    "経験にもとづく行動",
+                    "個体間の情報伝達",
+                    "生物時計"
+                ]
+            },
+            {
+                lesson: 18,
+                title: "植物生理",
+                core: "光受容体、营养成长、生殖成长等",
+                mapImage: "18.png",
+                details: [
+                    "種子の形成と種子の種類",
+                    "種子の発芽と成長"
+                ]
+            },
+            {
+                lesson: 19,
+                title: "生态系",
+                core: "植生、迁移、生物群系、种内与种间关系等",
+                mapImage: "19.png",
+                details: [
+                    "環境と生物",
+                    "個体群とその変動",
+                    "個体群の相互作用",
+                    "個体群間の相互作用",
+                    "植物群落の構造と物質生産",
+                    "植物群落の種類と水中の生物",
+                    "植物群落の遷移",
+                    "動物群集の遷移",
+                    "生物群集とその分布",
+                    "日本の植物群系の水平分布と垂直分布",
+                    "生態系",
+                    "生態系の物質収支",
+                    "生態系内の物質循環",
+                    "生態系内のエネルギーの流れ",
+                    "人間の生活にともなう環境問題",
+                    "環境の保全と回復"
+                ]
+            },
+            {
+                lesson: 20,
+                title: "进化与分类",
+                core: "化学进化、地质年代、人的进化、化石、分类系统",
+                mapImage: "20.png",
+                details: [
+                    "生命の起源",
+                    "生物進化の道すじ",
+                    "ヒトへの進化",
+                    "進化の証拠",
+                    "進化のしくみ",
+                    "生物の多様性と分類",
+                    "生物の系統",
+                    "五界説による生物の分類",
+                    "原核生物界・原生生物界の分類",
+                    "菌界・植物界の分類",
+                    "動物界の分類"
+                ]
+            }
+        ];
+
+        const container = document.getElementById('timeline-container');
+
+        lessonsData.forEach((lesson, index) => {
+            const row = document.createElement('div');
+            row.className = 'lesson-row';
+            row.style.transitionDelay = `${(index % 5) * 0.1}s`;
+
+            const detailsList = lesson.details.map(d => `<li>${d}</li>`).join('');
+            
+            // Image handling
+            let imageContent = '';
+            if (lesson.mapImage) {
+                imageContent = `<img src="${lesson.mapImage}" alt="第 ${lesson.lesson} 讲 配图" />`;
+            } else {
+                imageContent = `<div class="empty-image-placeholder">配图尚未添加</div>`;
+            }
+
+            row.innerHTML = `
+                <div class="lesson-text-col">
+                    <div class="timeline-line"></div>
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="lesson-number">第 ${lesson.lesson} 讲</div>
+                        <h2 class="lesson-title">${lesson.title}</h2>
+                        <p class="lesson-core">${lesson.core}</p>
+                        
+                        <div class="details-wrapper">
+                            <ul class="details-list">
+                                ${detailsList}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="lesson-image-col">
+                    ${imageContent}
+                </div>
+            `;
+            container.appendChild(row);
+        });
+
+        // Intersection Observer for scroll animation
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        setTimeout(() => {
+            document.querySelectorAll('.lesson-row').forEach(row => {
+                observer.observe(row);
+            });
+        }, 50);
+
+        // Resizer Logic
+        const resizer = document.getElementById('resizer');
+        let isDragging = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            resizer.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none'; // Prevent text selection while dragging
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const container = document.getElementById('page-container');
+            const rect = container.getBoundingClientRect();
+            
+            // Calculate percentage based on the container's width and position
+            let newRatio = ((e.clientX - rect.left) / rect.width) * 100;
+            
+            // Constrain between 20% and 80% to ensure both sides are visible
+            if (newRatio < 20) newRatio = 20;
+            if (newRatio > 80) newRatio = 80;
+            
+            document.documentElement.style.setProperty('--left-ratio', `${newRatio}%`);
+            // Pass pure number for CSS calc() math scaling
+            document.documentElement.style.setProperty('--left-ratio-num', newRatio);
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                resizer.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+    </script>
+</body>
+
+</html>
